@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
-import models from "../models/init-models.js";
+import models, { sequelize } from "../models/init-models.js";
+import messageHelper from "../messageError/messageError.js";
 
 const findAllrows = async (req, res) => {
   try {
@@ -53,4 +54,26 @@ const DeleteUser = async (req, res) => {
   }
 };
 
-export default { CreateUser, findAllrows, UpdateUser, DeleteUser };
+const CreateUserSP = async (req, res) => {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const passHash = await bcrypt.hash(req.body.password, salt);
+    req.body.password = passHash;
+
+    const data = `[${JSON.stringify(req.body)}]`;
+    const query = `CALL public.insertdata ('${data}')`;
+    const result = await sequelize.query(query);
+
+    res.send(messageHelper(result, 200, "sukses"));
+  } catch (err) {
+    res.send(messageHelper(err.message, 400, "coba lagi"));
+  }
+};
+
+export default {
+  CreateUser,
+  findAllrows,
+  UpdateUser,
+  DeleteUser,
+  CreateUserSP,
+};
